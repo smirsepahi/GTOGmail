@@ -24,7 +24,7 @@ try {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // CORS configuration
 const allowedOrigins = [
@@ -60,147 +60,7 @@ let reminders = [];
 // Multer configuration for file uploads
 const upload = multer({ dest: 'uploads/' });
 
-// Routes
-
-// Get all contacts
-app.get('/api/contacts', (req, res) => {
-  res.json(contacts);
-});
-
-// Add new contact
-app.post('/api/contacts', (req, res) => {
-  const newContact = {
-    id: uuidv4(),
-    ...req.body,
-    createdAt: new Date().toISOString()
-  };
-  contacts.push(newContact);
-  res.status(201).json(newContact);
-});
-
-// Update contact
-app.put('/api/contacts/:id', (req, res) => {
-  const { id } = req.params;
-  const contactIndex = contacts.findIndex(c => c.id === id);
-
-  if (contactIndex === -1) {
-    return res.status(404).json({ error: 'Contact not found' });
-  }
-
-  contacts[contactIndex] = { ...contacts[contactIndex], ...req.body };
-  res.json(contacts[contactIndex]);
-});
-
-// Delete contact
-app.delete('/api/contacts/:id', (req, res) => {
-  const { id } = req.params;
-  contacts = contacts.filter(c => c.id !== id);
-  res.status(204).send();
-});
-
-// Get all reminders
-app.get('/api/reminders', (req, res) => {
-  res.json(reminders);
-});
-
-// Add new reminder
-app.post('/api/reminders', (req, res) => {
-  const newReminder = {
-    id: uuidv4(),
-    ...req.body,
-    createdAt: new Date().toISOString()
-  };
-  reminders.push(newReminder);
-  res.status(201).json(newReminder);
-});
-
-// Update reminder
-app.put('/api/reminders/:id', (req, res) => {
-  const { id } = req.params;
-  const reminderIndex = reminders.findIndex(r => r.id === id);
-
-  if (reminderIndex === -1) {
-    return res.status(404).json({ error: 'Reminder not found' });
-  }
-
-  reminders[reminderIndex] = { ...reminders[reminderIndex], ...req.body };
-  res.json(reminders[reminderIndex]);
-});
-
-// Delete reminder
-app.delete('/api/reminders/:id', (req, res) => {
-  const { id } = req.params;
-  reminders = reminders.filter(r => r.id !== id);
-  res.status(204).send();
-});
-
-// CSV import endpoint
-app.post('/api/import/csv', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-
-  const results = [];
-
-  fs.createReadStream(req.file.path)
-    .pipe(csv())
-    .on('data', (data) => {
-      // Map CSV columns to contact fields
-      const contact = {
-        id: uuidv4(),
-        name: data.name || data.Name || data.NAME || '',
-        email: data.email || data.Email || data.EMAIL || '',
-        phone: data.phone || data.Phone || data.PHONE || '',
-        company: data.company || data.Company || data.COMPANY || '',
-        position: data.position || data.Position || data.POSITION || '',
-        notes: data.notes || data.Notes || data.NOTES || '',
-        createdAt: new Date().toISOString()
-      };
-      results.push(contact);
-    })
-    .on('end', () => {
-      // Add imported contacts to our storage
-      contacts.push(...results);
-
-      // Clean up uploaded file
-      fs.unlinkSync(req.file.path);
-
-      res.json({
-        message: `Successfully imported ${results.length} contacts`,
-        contacts: results
-      });
-    })
-    .on('error', (error) => {
-      // Clean up uploaded file
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      res.status(500).json({ error: 'Error processing CSV file' });
-    });
-});
-
-// Analytics endpoint
-app.get('/api/analytics', (req, res) => {
-  const totalContacts = contacts.length;
-  const totalReminders = reminders.length;
-  const upcomingReminders = reminders.filter(r => {
-    const reminderDate = new Date(r.date);
-    const now = new Date();
-    return reminderDate > now;
-  }).length;
-
-  res.json({
-    totalContacts,
-    totalReminders,
-    upcomingReminders,
-    recentContacts: contacts.slice(-5).reverse()
-  });
-});
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
+// Routes - removed duplicate contact routes, using separate route files instead
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -209,6 +69,7 @@ app.get('/health', (req, res) => {
 
 // Gmail API routes
 app.use('/api/gmail', gmailRoutes);
+console.log('Gmail API routes registered at /api/gmail');
 
 // Outlook API routes (only if configured)
 if (outlookRoutes) {
@@ -220,9 +81,20 @@ if (outlookRoutes) {
 
 // Companies API routes
 app.use('/api/companies', companiesRoutes);
+console.log('Companies API routes registered at /api/companies');
 
 // Contacts API routes
 app.use('/api/contacts', contactsRoutes);
+console.log('Contacts API routes registered at /api/contacts');
+
+// Debug: List all registered routes
+app._router.stack.forEach(function(r){
+  if (r.route && r.route.path){
+    console.log('Route:', r.route.path)
+  } else if (r.name === 'router') {
+    console.log('Router middleware:', r.regexp)
+  }
+});
 
 // Make Gmail service and user tokens available to other routes
 const GmailService = require('./services/gmailService');
