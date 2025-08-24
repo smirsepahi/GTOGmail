@@ -94,7 +94,19 @@ const upload = multer({ dest: 'uploads/' });
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  console.log('🏥 Health check requested');
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    routes: ['gmail', 'contacts', 'companies', 'outlook']
+  });
+});
+
+// Keep-alive endpoint for Railway
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
 });
 
 // Register routes with error handling
@@ -200,6 +212,11 @@ process.on('unhandledRejection', (reason, promise) => {
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend server running on port ${PORT}`);
   console.log('Server is ready to accept connections');
+
+  // Keep-alive mechanism for Railway
+  setInterval(() => {
+    console.log(`💓 Server heartbeat - Uptime: ${Math.floor(process.uptime())}s`);
+  }, 60000); // Log every minute
 });
 
 // Graceful shutdown
