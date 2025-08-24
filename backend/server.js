@@ -9,18 +9,48 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 // Import Gmail, Outlook, Companies, and Contacts routes
-const gmailRoutes = require('./routes/gmail');
-const companiesRoutes = require('./routes/companies');
-const contactsRoutes = require('./routes/contacts');
+console.log('Loading route modules...');
+
+let gmailRoutes = null;
+let companiesRoutes = null;
+let contactsRoutes = null;
+let outlookRoutes = null;
+
+try {
+  console.log('Loading gmail routes...');
+  gmailRoutes = require('./routes/gmail');
+  console.log('Gmail routes loaded successfully');
+} catch (error) {
+  console.error('Failed to load gmail routes:', error.message);
+}
+
+try {
+  console.log('Loading companies routes...');
+  companiesRoutes = require('./routes/companies');
+  console.log('Companies routes loaded successfully');
+} catch (error) {
+  console.error('Failed to load companies routes:', error.message);
+}
+
+try {
+  console.log('Loading contacts routes...');
+  contactsRoutes = require('./routes/contacts');
+  console.log('Contacts routes loaded successfully');
+} catch (error) {
+  console.error('Failed to load contacts routes:', error.message);
+}
 
 // Conditionally import Outlook routes only if credentials are provided
-let outlookRoutes = null;
 try {
   if (process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET) {
+    console.log('Loading outlook routes...');
     outlookRoutes = require('./routes/outlook');
+    console.log('Outlook routes loaded successfully');
+  } else {
+    console.log('Outlook routes skipped - missing Microsoft credentials');
   }
 } catch (error) {
-  console.warn('Outlook routes disabled due to missing dependencies or configuration');
+  console.warn('Outlook routes disabled due to missing dependencies or configuration:', error.message);
 }
 
 const app = express();
@@ -67,33 +97,85 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Register routes with error handling
+console.log('Registering API routes...');
+
 // Gmail API routes
-app.use('/api/gmail', gmailRoutes);
-console.log('Gmail API routes registered at /api/gmail');
+if (gmailRoutes) {
+  app.use('/api/gmail', gmailRoutes);
+  console.log('✅ Gmail API routes registered at /api/gmail');
+} else {
+  console.error('❌ Gmail routes not available - creating fallback');
+  app.use('/api/gmail', (req, res) => {
+    res.status(500).json({ error: 'Gmail service not available' });
+  });
+}
+
+// Contacts API routes
+if (contactsRoutes) {
+  app.use('/api/contacts', contactsRoutes);
+  console.log('✅ Contacts API routes registered at /api/contacts');
+} else {
+  console.error('❌ Contacts routes not available - creating fallback');
+  app.use('/api/contacts', (req, res) => {
+    res.status(500).json({ error: 'Contacts service not available' });
+  });
+}
+
+// Companies API routes
+if (companiesRoutes) {
+  app.use('/api/companies', companiesRoutes);
+  console.log('✅ Companies API routes registered at /api/companies');
+} else {
+  console.error('❌ Companies routes not available - creating fallback');
+  app.use('/api/companies', (req, res) => {
+    res.status(500).json({ error: 'Companies service not available' });
+  });
+}
 
 // Outlook API routes (only if configured)
 if (outlookRoutes) {
   app.use('/api/outlook', outlookRoutes);
-  console.log('Outlook API routes enabled');
+  console.log('✅ Outlook API routes enabled');
 } else {
-  console.log('Outlook API routes disabled - missing Microsoft credentials');
+  console.log('⚠️ Outlook API routes disabled - missing Microsoft credentials');
+  app.use('/api/outlook', (req, res) => {
+    res.status(503).json({ error: 'Outlook service not configured' });
+  });
 }
 
-// Companies API routes
-app.use('/api/companies', companiesRoutes);
-console.log('Companies API routes registered at /api/companies');
-
-// Contacts API routes
-app.use('/api/contacts', contactsRoutes);
-console.log('Contacts API routes registered at /api/contacts');
-
 // Debug: List all registered routes
-app._router.stack.forEach(function(r){
+console.log('\n📋 Registered routes:');
+app._router.stack.forEach(function(r, index){
   if (r.route && r.route.path){
-    console.log('Route:', r.route.path)
+    console.log(`${index + 1}. Route: ${r.route.path} [${Object.keys(r.route.methods).join(', ').toUpperCase()}]`);
   } else if (r.name === 'router') {
-    console.log('Router middleware:', r.regexp)
+    console.log(`${index + 1}. Router middleware: ${r.regexp}`);
+  } else {
+    console.log(`${index + 1}. Middleware: ${r.name || 'anonymous'}`);
   }
+});
+
+// Add catch-all route for debugging
+app.use('/api/*', (req, res) => {
+  console.log(`❌ Unhandled API route: ${req.method} ${req.path}`);
+  console.log('Available routes should be: /api/gmail, /api/contacts, /api/companies, /api/outlook');
+  res.status(404).json({
+    error: 'API route not found',
+    path: req.path,
+    method: req.method,
+    availableRoutes: ['/api/gmail', '/api/contacts', '/api/companies', '/api/outlook', '/api/health']
+  });
+});
+
+// Catch-all for non-API routes
+app.use('*', (req, res) => {
+  console.log(`❌ Unhandled route: ${req.method} ${req.path}`);
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
 });
 
 // Make Gmail service and user tokens available to other routes

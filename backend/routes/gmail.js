@@ -1,21 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const GmailService = require('../services/gmailService');
 
-// Initialize Gmail service
-const gmailService = new GmailService();
+console.log('📧 Initializing Gmail routes module...');
+
+let gmailService = null;
+try {
+  const GmailService = require('../services/gmailService');
+  gmailService = new GmailService();
+  console.log('✅ Gmail service initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize Gmail service:', error.message);
+}
 
 // Store tokens in memory (in production, use a database)
 // Note: userTokens will be shared via app.locals
 
 // Get OAuth2 authorization URL
 router.get('/auth/url', (req, res) => {
+  console.log('📧 GET /auth/url - Generating Gmail auth URL...');
   try {
+    if (!gmailService) {
+      console.error('❌ Gmail service not available');
+      return res.status(500).json({ error: 'Gmail service not initialized' });
+    }
     const authUrl = gmailService.getAuthUrl();
+    console.log('✅ Auth URL generated successfully');
     res.json({ authUrl });
   } catch (error) {
-    console.error('Error generating auth URL:', error);
-    res.status(500).json({ error: 'Failed to generate authorization URL' });
+    console.error('❌ Error generating auth URL:', error);
+    res.status(500).json({ error: 'Failed to generate authorization URL', details: error.message });
   }
 });
 
@@ -147,18 +160,24 @@ router.post('/send', async (req, res) => {
 
 // Check authentication status
 router.get('/auth/status', (req, res) => {
+  console.log('📧 GET /auth/status - Checking Gmail authentication status...');
   try {
     const userId = req.query.userId || 'default';
     const userTokens = req.app.locals.userTokens || {};
     const tokens = userTokens[userId];
 
-    res.json({
+    console.log(`📧 User ID: ${userId}, Has tokens: ${!!tokens}`);
+
+    const response = {
       authenticated: !!tokens,
       userId: tokens ? userId : null
-    });
+    };
+
+    console.log('✅ Auth status response:', response);
+    res.json(response);
   } catch (error) {
-    console.error('Error checking auth status:', error);
-    res.status(500).json({ error: 'Failed to check authentication status' });
+    console.error('❌ Error checking auth status:', error);
+    res.status(500).json({ error: 'Failed to check authentication status', details: error.message });
   }
 });
 

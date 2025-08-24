@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
+console.log('👥 Initializing Contacts routes module...');
+
 // File path for storing contacts
 const CONTACTS_FILE = path.join(__dirname, '../data/contacts.json');
 
@@ -77,14 +79,19 @@ async function checkContactStatus(email, gmailService, userTokens) {
 
 // GET /api/contacts - Get all contacts
 router.get('/', async (req, res) => {
+  console.log('👥 GET / - Fetching all contacts...');
   try {
     const contacts = readContacts();
+    console.log(`👥 Found ${contacts.length} contacts in storage`);
 
     // If Gmail service is available, check contact status for each contact
     const gmailService = req.app.locals.gmailService;
     const userTokens = req.app.locals.userTokens;
 
+    console.log(`👥 Gmail service available: ${!!gmailService}, User tokens available: ${!!userTokens}`);
+
     if (gmailService && userTokens) {
+      console.log('👥 Checking contact status with Gmail integration...');
       const contactsWithStatus = await Promise.all(
         contacts.map(async (contact) => {
           const status = await checkContactStatus(contact.email, gmailService, userTokens);
@@ -95,9 +102,11 @@ router.get('/', async (req, res) => {
         })
       );
 
+      console.log('✅ Contacts with status loaded successfully');
       res.json(contactsWithStatus);
     } else {
       // Return contacts without status if Gmail service is not available
+      console.log('👥 Returning contacts without Gmail status');
       const contactsWithDefaultStatus = contacts.map(contact => ({
         ...contact,
         contacted: false,
@@ -105,11 +114,12 @@ router.get('/', async (req, res) => {
         daysSinceContact: null
       }));
 
+      console.log('✅ Contacts loaded successfully (without Gmail status)');
       res.json(contactsWithDefaultStatus);
     }
   } catch (error) {
-    console.error('Error getting contacts:', error);
-    res.status(500).json({ error: 'Failed to get contacts' });
+    console.error('❌ Error getting contacts:', error);
+    res.status(500).json({ error: 'Failed to get contacts', details: error.message });
   }
 });
 
