@@ -44,7 +44,7 @@ A comprehensive email automation and networking platform built with Next.js and 
    ```bash
    # Frontend (.env.local)
    NEXT_PUBLIC_API_URL=http://localhost:3002/api
-   
+
    # Backend (.env)
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -55,7 +55,7 @@ A comprehensive email automation and networking platform built with Next.js and 
    ```bash
    # Terminal 1 - Backend
    cd backend && npm run dev
-   
+
    # Terminal 2 - Frontend
    npm run dev
    ```
@@ -130,3 +130,5 @@ A comprehensive email automation and networking platform built with Next.js and 
 ---
 
 Built with ❤️ for professional networking and email automation.
+
+<!-- Force rebuild -->
