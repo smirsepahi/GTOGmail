@@ -31,7 +31,8 @@ export interface UpdateContactRequest {
 }
 
 class ContactsService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'
+  private baseUrl = 'https://gtogmail-production.up.railway.app/api' // Temporary hardcode
+  // private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api'
 
   async getAllContacts(): Promise<Contact[]> {
     try {

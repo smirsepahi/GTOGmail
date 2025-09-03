@@ -1,4 +1,6 @@
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+// Temporary hardcode for debugging - REMOVE AFTER FIXING
+const BACKEND_URL = 'https://gtogmail-production.up.railway.app/api';
+// const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
 
 export interface Company {
   id: string;

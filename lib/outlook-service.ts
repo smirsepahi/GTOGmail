@@ -1,4 +1,12 @@
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+// Temporary hardcode for debugging - REMOVE AFTER FIXING
+const BACKEND_URL = 'https://gtogmail-production.up.railway.app/api';
+// const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
+
+// Debug logging
+console.log('🔧 Outlook Service Configuration:');
+console.log('- BACKEND_URL:', BACKEND_URL);
+console.log('- Environment:', process.env.NODE_ENV);
+console.log('- NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 
 export interface OutlookAuthResponse {
   authUrl: string;
