@@ -18,13 +18,19 @@ try {
 // Get OAuth2 authorization URL
 router.get('/auth/url', (req, res) => {
   console.log('📧 GET /auth/url - Generating Gmail auth URL...');
+  console.log('📧 Request headers:', req.headers);
+  console.log('📧 Request origin:', req.get('origin'));
+
   try {
     if (!gmailService) {
       console.error('❌ Gmail service not available');
-      return res.status(500).json({ error: 'Gmail service not initialized' });
+      return res.status(500).json({
+        error: 'Gmail service not configured',
+        details: 'Environment variables for Google OAuth are not set on Railway. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI in Railway dashboard.'
+      });
     }
     const authUrl = gmailService.getAuthUrl();
-    console.log('✅ Auth URL generated successfully');
+    console.log('✅ Auth URL generated successfully:', authUrl);
     res.json({ authUrl });
   } catch (error) {
     console.error('❌ Error generating auth URL:', error);

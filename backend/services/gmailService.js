@@ -5,6 +5,22 @@ const path = require('path');
 
 class GmailService {
   constructor() {
+    console.log('🔧 Initializing Gmail Service...');
+    console.log('- GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');
+    console.log('- GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET');
+    console.log('- GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI || 'NOT SET');
+
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REDIRECT_URI) {
+      const missingVars = [];
+      if (!process.env.GOOGLE_CLIENT_ID) missingVars.push('GOOGLE_CLIENT_ID');
+      if (!process.env.GOOGLE_CLIENT_SECRET) missingVars.push('GOOGLE_CLIENT_SECRET');
+      if (!process.env.GOOGLE_REDIRECT_URI) missingVars.push('GOOGLE_REDIRECT_URI');
+
+      const errorMsg = `Missing required Google OAuth credentials: ${missingVars.join(', ')}. Please set these environment variables.`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
+    }
+
     this.oauth2Client = new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -12,6 +28,7 @@ class GmailService {
     );
 
     this.gmail = google.gmail({ version: 'v1', auth: this.oauth2Client });
+    console.log('✅ Gmail Service initialized successfully');
   }
 
   // Generate OAuth2 authorization URL
