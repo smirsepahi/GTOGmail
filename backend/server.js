@@ -1,6 +1,8 @@
 // Load environment variables
 require('dotenv').config();
 
+// Force redeploy - Railway deployment fix
+
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
