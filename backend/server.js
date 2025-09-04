@@ -156,6 +156,15 @@ if (outlookRoutes) {
   });
 }
 
+// Debug routes
+try {
+  const debugRoutes = require('./routes/debug');
+  app.use('/debug', debugRoutes);
+  console.log('✅ Debug routes registered at /debug');
+} catch (error) {
+  console.error('❌ Debug routes not available:', error.message);
+}
+
 // Debug: List all registered routes
 console.log('\n📋 Registered routes:');
 app._router.stack.forEach(function(r, index){
