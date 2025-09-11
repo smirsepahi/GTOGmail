@@ -2,6 +2,12 @@
 const BACKEND_URL = 'https://gtogmail-production.up.railway.app/api';
 // const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
 
+// Debug logging
+console.log('🏢 Companies Service Configuration:');
+console.log('- BACKEND_URL:', BACKEND_URL);
+console.log('- Environment:', process.env.NODE_ENV);
+console.log('- NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+
 export interface Company {
   id: string;
   name: string;
@@ -57,19 +63,47 @@ export interface UpdateCompanyRequest {
 
 class CompaniesService {
   private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      ...options,
-    });
+    // Ensure we have a proper absolute URL
+    const fullUrl = `${BACKEND_URL}${endpoint}`;
 
-    if (!response.ok) {
-      throw new Error(`Companies API error: ${response.status} ${response.statusText}`);
+    console.log(`🏢 Companies API Request Details:`);
+    console.log(`  - Method: ${options?.method || 'GET'}`);
+    console.log(`  - BACKEND_URL: "${BACKEND_URL}"`);
+    console.log(`  - Endpoint: "${endpoint}"`);
+    console.log(`  - Full URL: "${fullUrl}"`);
+    console.log(`  - URL is absolute: ${fullUrl.startsWith('http')}`);
+
+    // Validate URL format
+    if (!fullUrl.startsWith('http')) {
+      console.error(`❌ Invalid URL format: ${fullUrl}`);
+      throw new Error(`Invalid URL format: ${fullUrl}. Expected absolute URL starting with http/https.`);
     }
 
-    return response.json();
+    try {
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+        mode: 'cors', // Explicitly set CORS mode
+        ...options,
+      });
+
+      console.log(`🏢 Companies API Response: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Companies API Error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Companies API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Companies API Success:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Companies API Request Failed:', error);
+      throw error;
+    }
   }
 
   // Get all companies
