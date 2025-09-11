@@ -16,6 +16,8 @@ import { EmailProviderAuth } from "@/components/email-provider-auth"
 import { CompanyManagement } from "@/components/company-management"
 import { gmailService } from "@/lib/gmail-service"
 import { emailService, EmailProvider } from "@/lib/email-service"
+import AuthGuard from "@/components/auth/AuthGuard"
+import ProfileDropdown from "@/components/profile/ProfileDropdown"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("compose")
@@ -54,9 +56,10 @@ export default function Home() {
   }
 
   return (
-    <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "20rem" }}>
-      <div className="min-h-screen bg-gray-50">
-        <TopNavigation />
+    <AuthGuard>
+      <SidebarProvider defaultOpen={true} style={{ "--sidebar-width": "20rem" }}>
+        <div className="min-h-screen bg-gray-50">
+          <TopNavigation />
 
         <div className="flex h-[calc(100vh-64px)]">
           {/* Calendar Sidebar */}
@@ -113,5 +116,6 @@ export default function Home() {
         </div>
       </div>
     </SidebarProvider>
+    </AuthGuard>
   )
 }

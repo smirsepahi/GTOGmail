@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Building2, Plus, Edit, Trash2, Target, TrendingUp, Calendar } from "lucide-react"
 import { companiesService, Company, CompanyWithStats } from "@/lib/companies-service"
 import { toast } from "sonner"
+import CompanyCard from "@/components/companies/CompanyCard"
 
 export function CompanyManagement() {
   const [companies, setCompanies] = useState<CompanyWithStats[]>([])
@@ -44,7 +45,7 @@ export function CompanyManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name || !formData.domain) {
       toast.error('Name and domain are required')
       return
@@ -63,7 +64,7 @@ export function CompanyManagement() {
         await companiesService.createCompany(formData)
         toast.success('Company added successfully')
       }
-      
+
       setDialogOpen(false)
       setEditingCompany(null)
       resetForm()
@@ -273,7 +274,7 @@ export function CompanyManagement() {
                         {company.color.split(' ')[0].replace('bg-', '').replace('-100', '')}
                       </Badge>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div>
                         <div className="flex items-center justify-between text-sm mb-1">
@@ -284,13 +285,13 @@ export function CompanyManagement() {
                           <span className="font-medium">{company.stats.todayCount}/{company.dailyGoal}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className={`h-2 rounded-full transition-all ${getProgressColor(company.stats.todayCount, company.dailyGoal)}`}
                             style={{ width: `${Math.min(companiesService.calculateProgress(company.stats.todayCount, company.dailyGoal), 100)}%` }}
                           />
                         </div>
                       </div>
-                      
+
                       <div>
                         <div className="flex items-center justify-between text-sm mb-1">
                           <span className="flex items-center">
@@ -300,14 +301,14 @@ export function CompanyManagement() {
                           <span className="font-medium">{company.stats.weekCount}/{company.weeklyGoal}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className={`h-2 rounded-full transition-all ${getProgressColor(company.stats.weekCount, company.weeklyGoal)}`}
                             style={{ width: `${Math.min(companiesService.calculateProgress(company.stats.weekCount, company.weeklyGoal), 100)}%` }}
                           />
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mt-4 pt-3 border-t">
                       <div className="flex items-center space-x-1">
                         <Target className="h-3 w-3 text-gray-500" />
