@@ -158,6 +158,15 @@ if (outlookRoutes) {
   });
 }
 
+// Calendar API routes
+try {
+  const calendarRoutes = require('./routes/calendar');
+  app.use('/api/calendar', calendarRoutes);
+  console.log('✅ Calendar API routes registered at /api/calendar');
+} catch (error) {
+  console.error('❌ Calendar routes not available:', error.message);
+}
+
 // Debug routes
 try {
   const debugRoutes = require('./routes/debug');

@@ -8,6 +8,8 @@ export interface User {
   name: string
   emailProvider: 'gmail' | 'outlook' | null
   isEmailConnected: boolean
+  isCalendarConnected?: boolean
+  calendarEmail?: string
   createdAt: string
   savedCompanies: string[]
   savedTemplates: string[]
@@ -64,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, name: string) => {
     try {
       setIsLoading(true)
-      
+
       // Create new user
       const newUser: User = {
         id: generateUserId(),
@@ -93,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string) => {
     try {
       setIsLoading(true)
-      
+
       // In production, this would validate against a database
       const savedUser = localStorage.getItem('gto_user')
       if (savedUser) {
@@ -104,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return
         }
       }
-      
+
       throw new Error('User not found')
     } catch (error) {
       console.error('❌ Sign in failed:', error)
@@ -137,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem('gto_user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
+
       console.log(`✅ ${provider} connected successfully`)
     } catch (error) {
       console.error(`❌ Failed to connect ${provider}:`, error)
@@ -152,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, ...updates }
       localStorage.setItem('gto_user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
+
       console.log('✅ Profile updated successfully')
     } catch (error) {
       console.error('❌ Profile update failed:', error)
@@ -171,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem('gto_user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
+
       console.log('✅ Company saved successfully')
     } catch (error) {
       console.error('❌ Failed to save company:', error)
@@ -190,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem('gto_user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
+
       console.log('✅ Company unsaved successfully')
     } catch (error) {
       console.error('❌ Failed to unsave company:', error)
@@ -209,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem('gto_user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
+
       console.log('✅ Template saved successfully')
     } catch (error) {
       console.error('❌ Failed to save template:', error)
@@ -228,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem('gto_user', JSON.stringify(updatedUser))
       setUser(updatedUser)
-      
+
       console.log('✅ Template unsaved successfully')
     } catch (error) {
       console.error('❌ Failed to unsave template:', error)
