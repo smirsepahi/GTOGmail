@@ -4,18 +4,33 @@ const BACKEND_URL = 'https://gtogmail-production.up.railway.app/api';
 export interface CalendarEvent {
   id: string
   summary: string
+  description?: string
+  location?: string
   start: {
-    dateTime: string
-    timeZone: string
+    dateTime?: string
+    date?: string
+    timeZone?: string
   }
   end: {
-    dateTime: string
-    timeZone: string
+    dateTime?: string
+    date?: string
+    timeZone?: string
   }
   attendees?: Array<{
     email: string
     displayName?: string
+    responseStatus?: string
   }>
+  creator?: {
+    email: string
+    displayName?: string
+  }
+  organizer?: {
+    email: string
+    displayName?: string
+  }
+  status?: string
+  htmlLink?: string
 }
 
 export interface AvailabilitySlot {
@@ -38,9 +53,9 @@ export interface SchedulingPreferences {
 class CalendarService {
   private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const fullUrl = `${BACKEND_URL}${endpoint}`;
-    
+
     console.log(`📅 Calendar API Request: ${options?.method || 'GET'} ${fullUrl}`);
-    
+
     try {
       const response = await fetch(fullUrl, {
         headers: {
@@ -83,9 +98,41 @@ class CalendarService {
     return this.makeRequest(`/calendar/events?start=${startDate}&end=${endDate}`);
   }
 
+  // Get today's events
+  async getTodaysEvents(): Promise<CalendarEvent[]> {
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.getEvents(startOfDay.toISOString(), endOfDay.toISOString());
+  }
+
+  // Get upcoming events (next 7 days)
+  async getUpcomingEvents(days: number = 7): Promise<CalendarEvent[]> {
+    const now = new Date();
+    const future = new Date();
+    future.setDate(future.getDate() + days);
+
+    return this.getEvents(now.toISOString(), future.toISOString());
+  }
+
+  // Get events for a specific date
+  async getEventsForDate(date: Date): Promise<CalendarEvent[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.getEvents(startOfDay.toISOString(), endOfDay.toISOString());
+  }
+
   // Get available time slots for scheduling
   async getAvailability(
-    date: string, 
+    date: string,
     preferences: SchedulingPreferences
   ): Promise<AvailabilitySlot[]> {
     return this.makeRequest('/calendar/availability', {
@@ -111,7 +158,7 @@ class CalendarService {
 
   // Generate availability for next N days
   async getAvailabilityForDays(
-    days: number, 
+    days: number,
     preferences: SchedulingPreferences
   ): Promise<{ [date: string]: AvailabilitySlot[] }> {
     return this.makeRequest('/calendar/availability/range', {
@@ -154,7 +201,7 @@ class CalendarService {
   }> {
     try {
       const availability = await this.getAvailabilityForDays(daysAhead, preferences);
-      
+
       // Get first 3 available slots
       const allSlots = Object.values(availability).flat();
       const suggestions = allSlots.slice(0, 3);

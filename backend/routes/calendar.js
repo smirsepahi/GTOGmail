@@ -17,7 +17,7 @@ try {
       oauth2Client,
       calendar: google.calendar({ version: 'v3', auth: oauth2Client })
     };
-    
+
     console.log('✅ Calendar service initialized');
   } else {
     console.log('⚠️ Calendar service not configured - missing Google credentials');
@@ -29,10 +29,10 @@ try {
 // Get OAuth2 authorization URL for calendar access
 router.get('/auth/url', (req, res) => {
   console.log('📅 GET /calendar/auth/url - Generating calendar auth URL...');
-  
+
   try {
     if (!calendarService) {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Calendar service not configured',
         details: 'Google OAuth credentials not set'
       });
@@ -61,7 +61,7 @@ router.get('/auth/url', (req, res) => {
 // Handle OAuth2 callback
 router.get('/auth/callback', async (req, res) => {
   console.log('📅 GET /calendar/auth/callback - Processing calendar auth callback...');
-  
+
   try {
     if (!calendarService) {
       return res.status(500).json({ error: 'Calendar service not configured' });
@@ -80,7 +80,7 @@ router.get('/auth/callback', async (req, res) => {
     global.calendarTokens = tokens;
 
     console.log('✅ Calendar authentication successful');
-    
+
     // Redirect to frontend
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     res.redirect(`${frontendUrl}?calendar_connected=true`);
@@ -93,7 +93,7 @@ router.get('/auth/callback', async (req, res) => {
 // Check calendar authentication status
 router.get('/auth/status', async (req, res) => {
   console.log('📅 GET /calendar/auth/status - Checking calendar auth status...');
-  
+
   try {
     if (!calendarService || !global.calendarTokens) {
       return res.json({ connected: false });
@@ -101,14 +101,17 @@ router.get('/auth/status', async (req, res) => {
 
     // Set credentials and test connection
     calendarService.oauth2Client.setCredentials(global.calendarTokens);
-    
+
     // Try to get user info to verify connection
     const oauth2 = google.oauth2({ version: 'v2', auth: calendarService.oauth2Client });
     const userInfo = await oauth2.userinfo.get();
 
-    res.json({ 
-      connected: true, 
-      email: userInfo.data.email 
+    // Store user email for filtering
+    global.userEmail = userInfo.data.email;
+
+    res.json({
+      connected: true,
+      email: userInfo.data.email
     });
   } catch (error) {
     console.error('❌ Calendar auth status check failed:', error);
@@ -119,7 +122,7 @@ router.get('/auth/status', async (req, res) => {
 // Get calendar events
 router.get('/events', async (req, res) => {
   console.log('📅 GET /calendar/events - Fetching calendar events...');
-  
+
   try {
     if (!calendarService || !global.calendarTokens) {
       return res.status(401).json({ error: 'Calendar not connected' });
@@ -128,19 +131,36 @@ router.get('/events', async (req, res) => {
     calendarService.oauth2Client.setCredentials(global.calendarTokens);
 
     const { start, end } = req.query;
-    
+
     const response = await calendarService.calendar.events.list({
       calendarId: 'primary',
       timeMin: start,
       timeMax: end,
       singleEvents: true,
       orderBy: 'startTime',
+      maxResults: 250, // Get more events
+      showDeleted: false,
     });
 
     const events = response.data.items || [];
-    console.log(`✅ Retrieved ${events.length} calendar events`);
-    
-    res.json(events);
+
+    // Filter out declined events and add more details
+    const filteredEvents = events.filter(event => {
+      // Skip declined events
+      if (event.attendees) {
+        const userAttendee = event.attendees.find(attendee =>
+          attendee.email === global.userEmail || attendee.self
+        );
+        if (userAttendee && userAttendee.responseStatus === 'declined') {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    console.log(`✅ Retrieved ${filteredEvents.length} calendar events (${events.length} total, filtered declined)`);
+
+    res.json(filteredEvents);
   } catch (error) {
     console.error('❌ Error fetching calendar events:', error);
     res.status(500).json({ error: 'Failed to fetch events', details: error.message });
@@ -150,7 +170,7 @@ router.get('/events', async (req, res) => {
 // Get availability for a specific date
 router.post('/availability', async (req, res) => {
   console.log('📅 POST /calendar/availability - Calculating availability...');
-  
+
   try {
     if (!calendarService || !global.calendarTokens) {
       return res.status(401).json({ error: 'Calendar not connected' });
@@ -159,11 +179,11 @@ router.post('/availability', async (req, res) => {
     calendarService.oauth2Client.setCredentials(global.calendarTokens);
 
     const { date, preferences } = req.body;
-    
+
     // Get events for the day
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
@@ -176,10 +196,10 @@ router.post('/availability', async (req, res) => {
     });
 
     const events = response.data.items || [];
-    
+
     // Calculate available slots
     const availableSlots = calculateAvailableSlots(date, events, preferences);
-    
+
     console.log(`✅ Found ${availableSlots.length} available slots`);
     res.json(availableSlots);
   } catch (error) {
@@ -191,7 +211,7 @@ router.post('/availability', async (req, res) => {
 // Create calendar event
 router.post('/events', async (req, res) => {
   console.log('📅 POST /calendar/events - Creating calendar event...');
-  
+
   try {
     if (!calendarService || !global.calendarTokens) {
       return res.status(401).json({ error: 'Calendar not connected' });
@@ -241,7 +261,7 @@ router.post('/events', async (req, res) => {
 function calculateAvailableSlots(date, events, preferences) {
   const slots = [];
   const targetDate = new Date(date);
-  
+
   // Check if it's a working day
   if (!preferences.workingDays.includes(targetDate.getDay())) {
     return slots;
@@ -250,10 +270,10 @@ function calculateAvailableSlots(date, events, preferences) {
   // Create working hours for the day
   const [startHour, startMinute] = preferences.workingHours.start.split(':').map(Number);
   const [endHour, endMinute] = preferences.workingHours.end.split(':').map(Number);
-  
+
   const workStart = new Date(targetDate);
   workStart.setHours(startHour, startMinute, 0, 0);
-  
+
   const workEnd = new Date(targetDate);
   workEnd.setHours(endHour, endMinute, 0, 0);
 
@@ -268,13 +288,13 @@ function calculateAvailableSlots(date, events, preferences) {
 
   // Find available slots
   let currentTime = new Date(workStart);
-  
+
   for (const busyTime of busyTimes) {
     // If there's a gap before this busy time
     if (currentTime < busyTime.start) {
       const slotEnd = new Date(Math.min(busyTime.start, workEnd));
       const duration = (slotEnd - currentTime) / (1000 * 60); // minutes
-      
+
       if (duration >= preferences.meetingDuration) {
         slots.push({
           start: currentTime.toISOString(),
@@ -283,11 +303,11 @@ function calculateAvailableSlots(date, events, preferences) {
         });
       }
     }
-    
+
     // Move current time to end of busy period + buffer
     currentTime = new Date(busyTime.end.getTime() + preferences.bufferTime * 60 * 1000);
   }
-  
+
   // Check for availability after last event
   if (currentTime < workEnd) {
     const duration = (workEnd - currentTime) / (1000 * 60);

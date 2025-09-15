@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { calendarService, SchedulingPreferences } from '@/lib/calendar-service'
 import { Calendar, Clock, Settings, ExternalLink, Copy, Check } from 'lucide-react'
+import AvailabilityDisplay from './AvailabilityDisplay'
+import TodaysSchedule from './TodaysSchedule'
+import UpcomingMeetings from './UpcomingMeetings'
 
 export default function CalendarConnection() {
   const { user, updateProfile } = useAuth()
@@ -40,10 +43,10 @@ export default function CalendarConnection() {
     try {
       setIsLoading(true)
       const response = await calendarService.connectCalendar()
-      
+
       // Open Google Calendar auth in new window
       window.open(response.authUrl, '_blank', 'width=500,height=600')
-      
+
       // Poll for connection status
       const pollInterval = setInterval(async () => {
         try {
@@ -52,21 +55,21 @@ export default function CalendarConnection() {
             setIsConnected(true)
             setUserEmail(status.email || '')
             clearInterval(pollInterval)
-            
+
             // Update user profile
-            await updateProfile({ 
+            await updateProfile({
               isCalendarConnected: true,
-              calendarEmail: status.email 
+              calendarEmail: status.email
             })
           }
         } catch (err) {
           console.error('Poll failed:', err)
         }
       }, 2000)
-      
+
       // Stop polling after 5 minutes
       setTimeout(() => clearInterval(pollInterval), 300000)
-      
+
     } catch (error) {
       console.error('Failed to connect calendar:', error)
     } finally {
@@ -149,7 +152,7 @@ export default function CalendarConnection() {
               <Settings className="w-5 h-5" />
               Scheduling Preferences
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -263,6 +266,16 @@ export default function CalendarConnection() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Real Calendar Data */}
+          <div className="mt-8 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TodaysSchedule isConnected={isConnected} />
+              <AvailabilityDisplay preferences={preferences} isConnected={isConnected} />
+            </div>
+
+            <UpcomingMeetings isConnected={isConnected} />
           </div>
         </div>
       )}

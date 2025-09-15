@@ -10,7 +10,7 @@ export default function CalendarPage() {
     <AuthGuard requireEmailConnection={true}>
       <div className="min-h-screen bg-gray-50">
         <TopNavigation />
-        
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
@@ -24,14 +24,12 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="space-y-8">
             {/* Main Calendar Connection */}
-            <div className="lg:col-span-2">
-              <CalendarConnection />
-            </div>
+            <CalendarConnection />
 
-            {/* Benefits Sidebar */}
-            <div className="space-y-6">
+            {/* Benefits Sidebar - moved to bottom on mobile */}
+            <div className="lg:hidden space-y-6">
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Benefits</h3>
                 <div className="space-y-4">
@@ -44,7 +42,7 @@ export default function CalendarPage() {
                       <p className="text-sm text-gray-600">See your free times instantly</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-green-600 text-sm">✓</span>
@@ -54,7 +52,7 @@ export default function CalendarPage() {
                       <p className="text-sm text-gray-600">Send links to contacts for easy scheduling</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-green-600 text-sm">✓</span>
@@ -64,7 +62,7 @@ export default function CalendarPage() {
                       <p className="text-sm text-gray-600">Create calendar events automatically</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-green-600 text-sm">✓</span>
