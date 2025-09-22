@@ -23,6 +23,7 @@ interface AuthContextType {
   signIn: (email: string) => Promise<void>
   signOut: () => Promise<void>
   connectEmail: (provider: 'gmail' | 'outlook') => Promise<void>
+  connectCalendar: () => Promise<void>
   updateProfile: (updates: Partial<User>) => Promise<void>
   saveCompany: (companyId: string) => Promise<void>
   unsaveCompany: (companyId: string) => Promise<void>
@@ -147,6 +148,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const connectCalendar = async () => {
+    try {
+      if (!user) throw new Error('No user logged in')
+
+      // Import calendar service dynamically to avoid SSR issues
+      const { calendarService } = await import('@/lib/calendar-service')
+
+      // Get auth URL and open OAuth flow
+      const response = await calendarService.connectCalendar()
+
+      // Open Google Calendar auth in new window
+      window.open(response.authUrl, '_blank', 'width=500,height=600')
+
+      // Poll for connection status
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await calendarService.checkCalendarStatus()
+          if (status.connected) {
+            const updatedUser = {
+              ...user,
+              isCalendarConnected: true,
+              calendarEmail: status.email
+            }
+
+            localStorage.setItem('gto_user', JSON.stringify(updatedUser))
+            setUser(updatedUser)
+            clearInterval(pollInterval)
+
+            console.log('✅ Google Calendar connected successfully')
+          }
+        } catch (err) {
+          console.error('Calendar connection poll failed:', err)
+        }
+      }, 2000)
+
+      // Stop polling after 5 minutes
+      setTimeout(() => clearInterval(pollInterval), 300000)
+
+    } catch (error) {
+      console.error('❌ Failed to connect Google Calendar:', error)
+      throw error
+    }
+  }
+
   const updateProfile = async (updates: Partial<User>) => {
     try {
       if (!user) throw new Error('No user logged in')
@@ -246,6 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     connectEmail,
+    connectCalendar,
     updateProfile,
     saveCompany,
     unsaveCompany,
